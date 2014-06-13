@@ -18,6 +18,7 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
       useNative: false,
       dateType: 'date',
       dateFormat: 'shortDate',
+      modelDateFormat: null,
       dayFormat: 'dd',
       strictFormat: false,
       autoclose: false,
@@ -25,7 +26,9 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
       maxDate: +Infinity,
       startView: 0,
       minView: 0,
-      startWeek: 0
+      startWeek: 0,
+      iconLeft: 'glyphicon glyphicon-chevron-left',
+      iconRight: 'glyphicon glyphicon-chevron-right'
     };
 
     this.$get = function($window, $document, $rootScope, $sce, $locale, dateFilter, datepickerViews, $tooltip) {
@@ -49,6 +52,8 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
         $datepicker.$views = pickerViews.views;
         var viewDate = pickerViews.viewDate;
         scope.$mode = options.startView;
+        scope.$iconLeft = options.iconLeft;
+        scope.$iconRight = options.iconRight;
         var $picker = $datepicker.$views[scope.$mode];
 
         // Scope methods
@@ -74,6 +79,16 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
           // Build only if pristine
           $datepicker.$build(true);
         };
+
+        $datepicker.updateDisabledDates = function(dateRanges) {
+          options.disabledDateRanges = dateRanges;
+
+          for(var i = 0, l = scope.rows.length; i < l; i++) {
+            angular.forEach(scope.rows[i], function(el) {
+              el.disabled = $picker.isDisabled(el.date);
+            });
+          }
+        }
 
         $datepicker.select = function(date, keep) {
           // console.warn('$datepicker.select', date, scope.$mode);
@@ -237,7 +252,7 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
 
         // Directive options
         var options = {scope: scope, controller: controller};
-        angular.forEach(['placement', 'container', 'delay', 'trigger', 'keyboard', 'html', 'animation', 'template', 'autoclose', 'dateType', 'dateFormat', 'dayFormat', 'strictFormat', 'startWeek', 'useNative', 'lang', 'startView', 'minView'], function(key) {
+        angular.forEach(['placement', 'container', 'delay', 'trigger', 'keyboard', 'html', 'animation', 'template', 'autoclose', 'dateType', 'dateFormat', 'modelDateFormat', 'dayFormat', 'strictFormat', 'startWeek', 'useNative', 'lang', 'startView', 'minView'], function(key) {
           if(angular.isDefined(attr[key])) options[key] = attr[key];
         });
 
@@ -271,6 +286,24 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
           datepicker.update(controller.$dateValue);
         }, true);
 
+        // Normalize undefined/null/empty array,
+        // so that we don't treat changing from undefined->null as a change.
+        function normalizeDateRanges(ranges) {
+          if (!ranges || !ranges.length) return null;
+          return ranges;
+        }
+
+        if (angular.isDefined(attr['disabledDates'])) {
+          scope.$watch(attr['disabledDates'], function(disabledRanges, previousValue) {
+            disabledRanges = normalizeDateRanges(disabledRanges);
+            previousValue = normalizeDateRanges(previousValue);
+
+            if (disabledRanges !== previousValue) {
+              datepicker.updateDisabledDates(disabledRanges);
+            }
+          });
+        }
+
         var dateParser = $dateParser({format: options.dateFormat, lang: options.lang, strict: options.strictFormat});
 
         // viewValue -> $parsers -> modelValue
@@ -286,14 +319,17 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
             controller.$setValidity('date', false);
             return;
           } else {
-            var isValid = (isNaN(datepicker.$options.minDate) || parsedDate.getTime() >= datepicker.$options.minDate) &&
-              (isNaN(datepicker.$options.maxDate) || parsedDate.getTime() <= datepicker.$options.maxDate);
+            var isMinValid = isNaN(datepicker.$options.minDate) || parsedDate.getTime() >= datepicker.$options.minDate;
+            var isMaxValid = isNaN(datepicker.$options.maxDate) || parsedDate.getTime() <= datepicker.$options.maxDate;
+            var isValid = isMinValid && isMaxValid;
             controller.$setValidity('date', isValid);
+            controller.$setValidity('min', isMinValid);
+            controller.$setValidity('max', isMaxValid);
             // Only update the model when we have a valid date
             if(isValid) controller.$dateValue = parsedDate;
           }
           if(options.dateType === 'string') {
-            return dateFilter(viewValue, options.dateFormat);
+            return dateFilter(parsedDate, options.modelDateFormat || options.dateFormat);
           } else if(options.dateType === 'number') {
             return controller.$dateValue.getTime();
           } else if(options.dateType === 'iso') {
@@ -312,7 +348,7 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
           } else if(angular.isDate(modelValue)) {
             date = modelValue;
           } else if(options.dateType === 'string') {
-            date = dateParser.parse(modelValue);
+            date = dateParser.parse(modelValue, null, options.modelDateFormat);
           } else {
             date = new Date(modelValue);
           }
@@ -412,7 +448,25 @@ angular.module('mgcrea.ngStrap.datepicker', ['mgcrea.ngStrap.helpers.dateParser'
               return picker.$date && date.getFullYear() === picker.$date.getFullYear() && date.getMonth() === picker.$date.getMonth() && date.getDate() === picker.$date.getDate();
             },
             isDisabled: function(date) {
-              return date.getTime() < options.minDate || date.getTime() > options.maxDate;
+              var time = date.getTime();
+
+              // Disabled because of min/max date.
+              if (time < options.minDate || time > options.maxDate) return true;
+
+              // Disabled because of disabled date range.
+              if (options.disabledDateRanges) {
+                for (var i = 0; i < options.disabledDateRanges.length; i++) {
+                  if (time >= options.disabledDateRanges[i].start) {
+                    if (time <= options.disabledDateRanges[i].end) return true;
+
+                    // The disabledDateRanges is expected to be sorted, so if time >= start,
+                    // we know it's not disabled.
+                    return false;
+                  }
+                }
+              }
+
+              return false;
             },
             onKeyDown: function(evt) {
               var actualTime = picker.$date.getTime();
