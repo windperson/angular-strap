@@ -101,20 +101,34 @@ angular.module('mgcrea.ngStrap.typeahead', [
           evt.stopPropagation();
         };
         $typeahead.$onKeyDown = function (evt) {
-          if (!/(38|40|13)/.test(evt.keyCode))
+          if (!/(38|40|13)/.test(evt.keyCode)) {
             return;
+          }
           evt.preventDefault();
           evt.stopPropagation();
           // Select with enter
           if (evt.keyCode === 13 && scope.$matches.length) {
             $typeahead.select(scope.$activeIndex);
           }  // Navigate with keyboard
-          else if (evt.keyCode === 38 && scope.$activeIndex > 0)
-            scope.$activeIndex--;
-          else if (evt.keyCode === 40 && scope.$activeIndex < scope.$matches.length - 1)
-            scope.$activeIndex++;
-          else if (angular.isUndefined(scope.$activeIndex))
+          else if (evt.keyCode === 38) {
+            if (scope.$activeIndex > 0) {
+              scope.$activeIndex--;
+            } else if (scope.$activeIndex === -1) {
+              scope.$activeIndex = scope.$matches.length - 1;
+            } else {
+              scope.$activeIndex = -1;
+            }
+          } else if (evt.keyCode === 40) {
+            if (scope.$activeIndex < scope.$matches.length - 1) {
+              scope.$activeIndex++;
+            } else if (scope.$activeIndex === -1) {
+              scope.$activeIndex = 0;
+            } else {
+              scope.$activeIndex = -1;
+            }
+          } else if (angular.isUndefined(scope.$activeIndex)) {
             scope.$activeIndex = 0;
+          }
           scope.$digest();
         };
         // Overrides
