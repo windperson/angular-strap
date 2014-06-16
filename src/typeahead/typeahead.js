@@ -19,7 +19,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
       limit: 6
     };
 
-    this.$get = function($window, $rootScope, $tooltip) {
+    this.$get = function($window, $rootScope, $tooltip, $timeout) {
 
       var bodyEl = angular.element($window.document.body);
 
@@ -41,17 +41,21 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
         scope.$resetMatches();
 
         scope.$activate = function(index) {
-          scope.$$postDigest(function() {
-            $typeahead.activate(index);
-          });
+             $timeout(function(){
+                $typeahead.activate(index);
+            }, 0, false);
         };
 
         scope.$select = function(index, evt) {
-          scope.$$postDigest(function() {
+            $timeout(function(){
             $typeahead.select(index);
-          });
+          }, 0, false);
         };
 
+        scope.$isActive = function(index){
+            return index === scope.$activeIndex;
+        }
+          
         scope.$isVisible = function() {
           return $typeahead.$isVisible();
         };
@@ -67,6 +71,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
 
         $typeahead.activate = function(index) {
           scope.$activeIndex = index;
+            scope.$digest();//for performance on mouse-over effect.
         };
 
         $typeahead.select = function(index) {

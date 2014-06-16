@@ -1,6 +1,6 @@
 /**
  * angular-strap
- * @version v2.0.3 - 2014-06-13
+ * @version v2.0.3 - 2014-06-16
  * @link http://mgcrea.github.io/angular-strap
  * @author Olivier Louvignes (olivier@mg-crea.com)
  * @license MIT License, http://www.opensource.org/licenses/MIT
@@ -28,7 +28,8 @@ angular.module('mgcrea.ngStrap.typeahead', [
     '$window',
     '$rootScope',
     '$tooltip',
-    function ($window, $rootScope, $tooltip) {
+    '$timeout',
+    function ($window, $rootScope, $tooltip, $timeout) {
       var bodyEl = angular.element($window.document.body);
       function TypeaheadFactory(element, controller, config) {
         var $typeahead = {};
@@ -43,14 +44,17 @@ angular.module('mgcrea.ngStrap.typeahead', [
         };
         scope.$resetMatches();
         scope.$activate = function (index) {
-          scope.$$postDigest(function () {
+          $timeout(function () {
             $typeahead.activate(index);
-          });
+          }, 0, false);
         };
         scope.$select = function (index, evt) {
-          scope.$$postDigest(function () {
+          $timeout(function () {
             $typeahead.select(index);
-          });
+          }, 0, false);
+        };
+        scope.$isActive = function (index) {
+          return index === scope.$activeIndex;
         };
         scope.$isVisible = function () {
           return $typeahead.$isVisible();
@@ -64,6 +68,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
         };
         $typeahead.activate = function (index) {
           scope.$activeIndex = index;
+          scope.$digest();  //for performance on mouse-over effect.
         };
         $typeahead.select = function (index) {
           var value = scope.$matches[index].value;
