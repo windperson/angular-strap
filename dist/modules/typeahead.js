@@ -1,6 +1,6 @@
 /**
  * angular-strap
- * @version v2.0.3 - 2014-06-16
+ * @version v2.0.3 - 2014-06-17
  * @link http://mgcrea.github.io/angular-strap
  * @author Olivier Louvignes (olivier@mg-crea.com)
  * @license MIT License, http://www.opensource.org/licenses/MIT
@@ -22,7 +22,8 @@ angular.module('mgcrea.ngStrap.typeahead', [
       delay: 0,
       minLength: 1,
       filter: 'filter',
-      limit: 6
+      limit: 6,
+      circularSelect: false
     };
   this.$get = [
     '$window',
@@ -113,7 +114,11 @@ angular.module('mgcrea.ngStrap.typeahead', [
           evt.stopPropagation();
           // Select with enter
           if (evt.keyCode === 13 && scope.$matches.length) {
-            $typeahead.select(scope.$activeIndex);
+            if (scope.$matches[scope.$activeIndex]) {
+              $typeahead.select(scope.$activeIndex);
+            } else {
+              $typeahead.hide();
+            }
           }  // Navigate with keyboard
           else if (evt.keyCode === 38) {
             if (scope.$activeIndex > 0) {
@@ -154,6 +159,13 @@ angular.module('mgcrea.ngStrap.typeahead', [
             element.off('keydown', $typeahead.$onKeyDown);
           }
           hide();
+        };
+        $typeahead.$onFocusKeyUp = function (evt) {
+          if (evt.which === 27 && $typeahead.$isShown) {
+            $typeahead.hide();
+          } else if (evt.which !== 27 && evt.which !== 13 && !$typeahead.$isShown) {
+            $typeahead.show();
+          }
         };
         return $typeahead;
       }
