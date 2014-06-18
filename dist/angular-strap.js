@@ -1,6 +1,6 @@
 /**
  * angular-strap
- * @version v2.0.3 - 2014-06-17
+ * @version v2.0.3 - 2014-06-18
  * @link http://mgcrea.github.io/angular-strap
  * @author Olivier Louvignes (olivier@mg-crea.com)
  * @license MIT License, http://www.opensource.org/licenses/MIT
@@ -3573,7 +3573,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
       minLength: 1,
       filter: 'filter',
       limit: 6,
-      circularSelect: false
+      typeaheadCircularSelect: false
     };
   this.$get = [
     '$window',
@@ -3656,41 +3656,63 @@ angular.module('mgcrea.ngStrap.typeahead', [
           evt.preventDefault();
           evt.stopPropagation();
         };
-        $typeahead.$onKeyDown = function (evt) {
-          if (!/(38|40|13)/.test(evt.keyCode)) {
-            return;
-          }
-          evt.preventDefault();
-          evt.stopPropagation();
-          // Select with enter
-          if (evt.keyCode === 13 && scope.$matches.length) {
-            if (scope.$matches[scope.$activeIndex]) {
-              $typeahead.select(scope.$activeIndex);
-            } else {
-              $typeahead.hide();
+        if (options.typeaheadCircularSelect) {
+          $typeahead.$onKeyDown = function (evt) {
+            if (!/(38|40|13)/.test(evt.keyCode)) {
+              return;
             }
-          }  // Navigate with keyboard
-          else if (evt.keyCode === 38) {
-            if (scope.$activeIndex > 0) {
-              scope.$activeIndex--;
-            } else if (scope.$activeIndex === -1) {
-              scope.$activeIndex = scope.$matches.length - 1;
-            } else {
-              scope.$activeIndex = -1;
-            }
-          } else if (evt.keyCode === 40) {
-            if (scope.$activeIndex < scope.$matches.length - 1) {
-              scope.$activeIndex++;
-            } else if (scope.$activeIndex === -1) {
+            evt.preventDefault();
+            evt.stopPropagation();
+            // Select with enter
+            if (evt.keyCode === 13 && scope.$matches.length) {
+              if (scope.$matches[scope.$activeIndex]) {
+                $typeahead.select(scope.$activeIndex);
+              } else {
+                $typeahead.hide();
+              }
+            }  // Navigate with keyboard
+            else if (evt.keyCode === 38) {
+              if (scope.$activeIndex > 0) {
+                scope.$activeIndex--;
+              } else if (scope.$activeIndex === -1) {
+                scope.$activeIndex = scope.$matches.length - 1;
+              } else {
+                scope.$activeIndex = -1;
+              }
+            } else if (evt.keyCode === 40) {
+              if (scope.$activeIndex < scope.$matches.length - 1) {
+                scope.$activeIndex++;
+              } else if (scope.$activeIndex === -1) {
+                scope.$activeIndex = 0;
+              } else {
+                scope.$activeIndex = -1;
+              }
+            } else if (angular.isUndefined(scope.$activeIndex)) {
               scope.$activeIndex = 0;
-            } else {
-              scope.$activeIndex = -1;
             }
-          } else if (angular.isUndefined(scope.$activeIndex)) {
-            scope.$activeIndex = 0;
-          }
-          scope.$digest();
-        };
+            scope.$digest();
+          };
+        } else {
+          $typeahead.$onKeyDown = function (evt) {
+            if (!/(38|40|13)/.test(evt.keyCode)) {
+              return;
+            }
+            evt.preventDefault();
+            evt.stopPropagation();
+            // Select with enter
+            if (evt.keyCode === 13 && scope.$matches.length) {
+              $typeahead.select(scope.$activeIndex);
+            }  // Navigate with keyboard
+            else if (evt.keyCode === 38 && scope.$activeIndex > 0) {
+              scope.$activeIndex--;
+            } else if (evt.keyCode === 40 && scope.$activeIndex < scope.$matches.length - 1) {
+              scope.$activeIndex++;
+            } else if (angular.isUndefined(scope.$activeIndex)) {
+              scope.$activeIndex = 0;
+            }
+            scope.$digest();
+          };
+        }
         // Overrides
         var show = $typeahead.show;
         $typeahead.show = function () {
@@ -3748,7 +3770,8 @@ angular.module('mgcrea.ngStrap.typeahead', [
           'template',
           'filter',
           'limit',
-          'minLength'
+          'minLength',
+          'typeaheadCircularSelect'
         ], function (key) {
           if (angular.isDefined(attr[key]))
             options[key] = attr[key];

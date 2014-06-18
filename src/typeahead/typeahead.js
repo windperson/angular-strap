@@ -17,7 +17,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
         minLength: 1,
         filter: 'filter',
         limit: 6,
-        circularSelect: false
+        typeaheadCircularSelect: false
     };
 
     this.$get = function ($window, $rootScope, $tooltip, $timeout) {
@@ -112,42 +112,67 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
                 evt.stopPropagation();
             };
 
-            $typeahead.$onKeyDown = function (evt) {
-                if (!/(38|40|13)/.test(evt.keyCode)) {
-                    return;
-                }
-                evt.preventDefault();
-                evt.stopPropagation();
-                // Select with enter
-                if (evt.keyCode === 13 && scope.$matches.length) {
-                    if(scope.$matches[scope.$activeIndex]){
+            if (options.typeaheadCircularSelect) {
+                $typeahead.$onKeyDown = function (evt) {
+                    if (!/(38|40|13)/.test(evt.keyCode)) {
+                        return;
+                    }
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    // Select with enter
+                    if (evt.keyCode === 13 && scope.$matches.length) {
+                        if (scope.$matches[scope.$activeIndex]) {
+                            $typeahead.select(scope.$activeIndex);
+                        } else {
+                            $typeahead.hide();
+                        }
+                    } // Navigate with keyboard
+                    else if (evt.keyCode === 38) {
+                        if (scope.$activeIndex > 0) {
+                            scope.$activeIndex--;
+                        } else if (scope.$activeIndex === -1) {
+                            scope.$activeIndex = scope.$matches.length - 1;
+                        } else {
+                            scope.$activeIndex = -1;
+                        }
+                    } else if (evt.keyCode === 40) {
+                        if (scope.$activeIndex < scope.$matches.length - 1) {
+                            scope.$activeIndex++;
+                        } else if (scope.$activeIndex === -1) {
+                            scope.$activeIndex = 0;
+                        } else {
+                            scope.$activeIndex = -1;
+                        }
+                    } else if (angular.isUndefined(scope.$activeIndex)) {
+                        scope.$activeIndex = 0;
+                    }
+                    scope.$digest();
+                };
+            } else {
+                $typeahead.$onKeyDown = function (evt) {
+                    if (!/(38|40|13)/.test(evt.keyCode)) {
+                        return;
+                    }
+                    evt.preventDefault();
+                    evt.stopPropagation();
+
+                    // Select with enter
+                    if (evt.keyCode === 13 && scope.$matches.length) {
                         $typeahead.select(scope.$activeIndex);
                     }
-                    else{
-                        $typeahead.hide();
-                    }
-                } // Navigate with keyboard
-                else if (evt.keyCode === 38) {
-                    if (scope.$activeIndex > 0) {
+
+                    // Navigate with keyboard
+                    else if (evt.keyCode === 38 && scope.$activeIndex > 0) {
                         scope.$activeIndex--;
-                    } else if (scope.$activeIndex === -1) {
-                        scope.$activeIndex = scope.$matches.length - 1;
-                    } else {
-                        scope.$activeIndex = -1;
-                    }
-                } else if (evt.keyCode === 40) {
-                    if (scope.$activeIndex < scope.$matches.length - 1) {
+                    } else if (evt.keyCode === 40 && scope.$activeIndex < scope.$matches.length - 1) {
                         scope.$activeIndex++;
-                    } else if (scope.$activeIndex === -1) {
+                    } else if (angular.isUndefined(scope.$activeIndex)) {
                         scope.$activeIndex = 0;
-                    } else {
-                        scope.$activeIndex = -1;
                     }
-                } else if (angular.isUndefined(scope.$activeIndex)) {
-                    scope.$activeIndex = 0;
-                }
-                scope.$digest();
-            };
+                    scope.$digest();
+                };
+            }
+
 
             // Overrides
 
@@ -203,7 +228,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
             var options = {
                 scope: scope
             };
-            angular.forEach(['placement', 'container', 'delay', 'trigger', 'keyboard', 'html', 'animation', 'template', 'filter', 'limit', 'minLength'], function (key) {
+            angular.forEach(['placement', 'container', 'delay', 'trigger', 'keyboard', 'html', 'animation', 'template', 'filter', 'limit', 'minLength','typeaheadCircularSelect'], function (key) {
                 if (angular.isDefined(attr[key])) options[key] = attr[key];
             });
 
