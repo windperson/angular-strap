@@ -34,6 +34,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
       var bodyEl = angular.element($window.document.body);
       function TypeaheadFactory(element, controller, config) {
         var $typeahead = {};
+        var evtElement = element[0];
         // Common vars
         var options = angular.extend({}, defaults, config);
         $typeahead = $tooltip(element, options);
@@ -51,7 +52,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
         };
         scope.$select = function (index, evt) {
           $timeout(function () {
-            $typeahead.select(index);
+            $typeahead.select(index, evtElement);
           }, 0, false);
         };
         scope.$isActive = function (index) {
@@ -71,7 +72,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
           scope.$activeIndex = index;
           scope.$digest();  //for performance on mouse-over effect.
         };
-        $typeahead.select = function (index) {
+        $typeahead.select = function (index, evtElement) {
           var value = scope.$matches[index].value;
           controller.$setViewValue(value);
           controller.$render();
@@ -79,7 +80,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
           if (parentScope)
             parentScope.$digest();
           // Emit event
-          scope.$emit('$typeahead.select', value, index);
+          scope.$emit('$typeahead.select', evtElement, value, index);
         };
         // Protected methods
         $typeahead.$isVisible = function () {
@@ -116,7 +117,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
             // Select with enter
             if (evt.keyCode === 13 && scope.$matches.length) {
               if (scope.$matches[scope.$activeIndex]) {
-                $typeahead.select(scope.$activeIndex);
+                $typeahead.select(scope.$activeIndex, evtElement);
               } else {
                 $typeahead.hide();
               }
@@ -151,7 +152,7 @@ angular.module('mgcrea.ngStrap.typeahead', [
             evt.stopPropagation();
             // Select with enter
             if (evt.keyCode === 13 && scope.$matches.length) {
-              $typeahead.select(scope.$activeIndex);
+              $typeahead.select(scope.$activeIndex, evtElement);
             }  // Navigate with keyboard
             else if (evt.keyCode === 38 && scope.$activeIndex > 0) {
               scope.$activeIndex--;

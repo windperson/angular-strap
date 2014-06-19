@@ -27,6 +27,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
         function TypeaheadFactory(element, controller, config) {
 
             var $typeahead = {};
+            var evtElement = element[0];
 
             // Common vars
             var options = angular.extend({}, defaults, config);
@@ -48,14 +49,15 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
             };
 
             scope.$select = function (index, evt) {
+
                 $timeout(function () {
-                    $typeahead.select(index);
+                    $typeahead.select(index, evtElement);
                 }, 0, false);
             };
 
             scope.$isActive = function (index) {
                 return index === scope.$activeIndex;
-            }
+            };
 
             scope.$isVisible = function () {
                 return $typeahead.$isVisible();
@@ -75,14 +77,14 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
                 scope.$digest(); //for performance on mouse-over effect.
             };
 
-            $typeahead.select = function (index) {
+            $typeahead.select = function (index, evtElement) {
                 var value = scope.$matches[index].value;
                 controller.$setViewValue(value);
                 controller.$render();
                 scope.$resetMatches();
                 if (parentScope) parentScope.$digest();
                 // Emit event
-                scope.$emit('$typeahead.select', value, index);
+                scope.$emit('$typeahead.select', evtElement, value, index);
             };
 
             // Protected methods
@@ -122,7 +124,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
                     // Select with enter
                     if (evt.keyCode === 13 && scope.$matches.length) {
                         if (scope.$matches[scope.$activeIndex]) {
-                            $typeahead.select(scope.$activeIndex);
+                            $typeahead.select(scope.$activeIndex, evtElement);
                         } else {
                             $typeahead.hide();
                         }
@@ -158,7 +160,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
 
                     // Select with enter
                     if (evt.keyCode === 13 && scope.$matches.length) {
-                        $typeahead.select(scope.$activeIndex);
+                        $typeahead.select(scope.$activeIndex, evtElement);
                     }
 
                     // Navigate with keyboard
@@ -228,7 +230,7 @@ angular.module('mgcrea.ngStrap.typeahead', ['mgcrea.ngStrap.tooltip', 'mgcrea.ng
             var options = {
                 scope: scope
             };
-            angular.forEach(['placement', 'container', 'delay', 'trigger', 'keyboard', 'html', 'animation', 'template', 'filter', 'limit', 'minLength','typeaheadCircularSelect'], function (key) {
+            angular.forEach(['placement', 'container', 'delay', 'trigger', 'keyboard', 'html', 'animation', 'template', 'filter', 'limit', 'minLength', 'typeaheadCircularSelect'], function (key) {
                 if (angular.isDefined(attr[key])) options[key] = attr[key];
             });
 
